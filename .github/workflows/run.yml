@@ -1,0 +1,36 @@
+name: run-experiments
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "aoitwt/**"
+      - "experiments/**"
+      - "tests/**"
+      - "requirements.txt"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Sanity tests
+        run: python -m pytest -q tests
+      - name: Run experiments (E1-E3)
+        run: python -m experiments.run_all
+      - name: Commit refreshed results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results
+          git diff --cached --quiet || (git commit -m "Update results from CI run [skip ci]" && git push)
