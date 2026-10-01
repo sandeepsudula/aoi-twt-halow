@@ -30,3 +30,9 @@ their TWT schedules to keep the AP's view of the world fresh — especially when
 ## Prototype findings to follow up
 - The best `T_fast` in every budget was the largest one tried (`T_opt/2`) — widen the search and optimize `k_calm` too.
 - The ~10 ms event-wake latency assumes an idle channel and ideal sensing; quantify with contention and sensing delay.
+
+## Order across the three parts
+1. **Measurement study** ([measurement_study.md](measurement_study.md)) — testbed working, baseline link and
+   energy data; replaces every placeholder in `aoitwt/params.py` and `control/env.py`.
+2. **AoI-aware TWT** (this plan, M2–M6) — the main contribution.
+3. **Joint TX-power + TWT controller, sim-to-real** ([control.md](control.md)) — the extension.
