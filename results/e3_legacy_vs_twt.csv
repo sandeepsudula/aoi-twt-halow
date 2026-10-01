@@ -1,0 +1,22 @@
+n_sta,policy,power_mw
+1,legacy (random phase),0.11196416666666667
+1,legacy (synchronized),0.11196416666666667
+1,individual TWT,0.07999083333333334
+5,legacy (random phase),0.11196416666666667
+5,legacy (synchronized),0.12595250000000002
+5,individual TWT,0.07999083333333334
+10,legacy (random phase),0.11196194519675927
+10,legacy (synchronized),0.1434379166666667
+10,individual TWT,0.07999083333333336
+25,legacy (random phase),0.11196238949074074
+25,legacy (synchronized),0.19589416666666665
+25,individual TWT,0.07999083333333334
+50,legacy (random phase),0.11210039850694443
+50,legacy (synchronized),0.2833212499999999
+50,individual TWT,0.07999083333333334
+100,legacy (random phase),0.11238060946759261
+100,legacy (synchronized),0.45817541666666656
+100,individual TWT,0.07999083333333336
+200,legacy (random phase),0.11290476589120367
+200,legacy (synchronized),0.8078837500000002
+200,individual TWT,0.07999083333333336
