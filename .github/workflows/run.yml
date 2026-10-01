@@ -9,6 +9,8 @@ on:
       - "tests/**"
       - "requirements.txt"
       - ".github/workflows/**"
+      - "control/**"
+      - "measure/**"
   workflow_dispatch:
 
 permissions:
@@ -28,8 +30,11 @@ jobs:
         run: python -m pytest -q tests
       - name: Run experiments (E1-E3)
         run: python -m experiments.run_all
+      - name: Train and compare power/TWT controllers
+        run: python -m control.train
       - name: Commit refreshed results
         run: |
+       
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add results
