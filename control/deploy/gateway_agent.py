@@ -63,7 +63,7 @@ def main(argv=None):
     ap.add_argument("--iface", default="wlan0")
     ap.add_argument("--node", action="append", required=True, help="MAC=IP, repeatable")
     ap.add_argument("--port", type=int, default=5005, help="node UDP command port")
-    ap.add_argument("--noise-floor-dbm", type=float, default=-110.0)
+    ap.add_argument("--noise-floor-dbm", type=float, default=-109.0)
     ap.add_argument("--state-file", help="JSON {mac: true/false} with each node's active flag")
     ap.add_argument("--epoch-s", type=float, help="override the epoch length from the Q-table")
     ap.add_argument("--dry-run", action="store_true")
