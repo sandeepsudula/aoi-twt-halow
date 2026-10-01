@@ -16,9 +16,12 @@ retransmissions. Outcomes are computed in expectation (fast, smooth reward):
 
 Reward = -(w * AoI / aoi_ref) - lam * (P_avg / p_ref)
 
-All link and power numbers are PLACEHOLDERS to be replaced by the measurement
-study: path-loss exponent/shadowing from measure/analyze.py,
-per-state power from measure/parse_power.py.
+Link and power numbers come from published sources (docs/parameters.md):
+MM6108 module data sheet (power, TX power, MCS0 sensitivity), the 802.11ah
+MCS table (rates), 802.11 per-MCS sensitivity steps, and the TGah pico/hot-zone
+path-loss model. Shadowing and a few timings are [ASSUMPTION]s. Replace them
+with the measurement study's values (measure/analyze.py, measure/parse_power.py)
+before reporting hardware results.
 
 The controller only sees what the gateway can see: the SNR bucket from the
 last epoch (`iw station dump` signal minus noise floor) and the last reported
@@ -31,41 +34,51 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-# 802.11ah 1 MHz, 1 spatial stream: approximate PHY rates (Mb/s) and
-# placeholder SNR thresholds (dB) for MCS10, MCS0..MCS4.
+# 802.11ah 1 MHz, 1 spatial stream, 8 us GI rates (Mb/s) [802.11ah MCS table].
+# SNR thresholds (dB, at 10 % PER) = sensitivity - noise floor (-109 dBm), with
+# sensitivity = MM6108 MCS0 1 MHz -105 dBm [MM6108 data sheet] plus the 802.11
+# per-MCS minimum-sensitivity steps (0,3,5,8,12,16,17,18 dB); MCS10 is 3 dB
+# below MCS0 (2x repetition).
 MCS_TABLE = [  # (name, rate_mbps, snr_threshold_db)
-    ("MCS10", 0.15, -1.0),
-    ("MCS0", 0.30, 2.0),
-    ("MCS1", 0.60, 5.0),
-    ("MCS2", 0.90, 8.0),
-    ("MCS3", 1.20, 11.0),
-    ("MCS4", 1.80, 15.0),
+    ("MCS10", 0.15, 1.0),
+    ("MCS0", 0.30, 4.0),
+    ("MCS1", 0.60, 7.0),
+    ("MCS2", 0.90, 9.0),
+    ("MCS3", 1.20, 12.0),
+    ("MCS4", 1.80, 16.0),
+    ("MCS5", 2.40, 20.0),
+    ("MCS6", 2.70, 21.0),
+    ("MCS7", 3.00, 22.0),
 ]
 
 
 @dataclass
 class LinkModel:
-    freq_mhz: float = 915.0
-    pl_exp: float = 3.0          # path-loss exponent        [PLACEHOLDER -> measure]
-    shadow_sigma_db: float = 6.0  # shadowing std           [PLACEHOLDER -> measure]
-    shadow_rho: float = 0.9      # AR(1) correlation between epochs
-    noise_floor_dbm: float = -110.0  # 1 MHz incl. noise figure [PLACEHOLDER]
+    # TGah pico/hot-zone outdoor model at 900 MHz: PL = 23.3 + 36.7 log10(d) dB
+    pl0_db: float = 23.3
+    pl_exp: float = 3.67
+    shadow_sigma_db: float = 6.0  # shadowing std (dB)                 [ASSUMPTION]
+    shadow_rho: float = 0.9      # AR(1) correlation between epochs     [ASSUMPTION]
+    # thermal noise -174 dBm/Hz + 60 dB (1 MHz) + 5 dB station noise figure
+    noise_floor_dbm: float = -109.0
     d_min: float = 10.0
     d_max: float = 600.0
     d_step: float = 15.0         # random-walk step per epoch (m)
 
     def path_loss_db(self, d):
-        fspl_1m = 20 * np.log10(self.freq_mhz) - 27.55   # free space at 1 m
-        return fspl_1m + 10 * self.pl_exp * np.log10(np.maximum(d, 1.0))
+        return self.pl0_db + 10 * self.pl_exp * np.log10(np.maximum(d, 1.0))
 
 
 @dataclass
 class PowerModel:
-    p_sleep: float = 0.05e-3     # W            [PLACEHOLDER -> measure]
-    p_rx: float = 60e-3          # W
-    p_tx_base: float = 120e-3    # W, radio+MCU while transmitting, excl. PA output
-    pa_eff: float = 0.25         # PA efficiency (output RF / extra supply power)
-    t_wake_listen: float = 5e-3  # s, wake-up + guard + ACK per wake
+    # same data-sheet values as aoitwt/params.py (3.3 V supply)
+    p_sleep: float = 35e-6       # W, MCU Stop 2 + radio deep sleep
+    p_rx: float = 0.137          # W, listen (37 + 4.5 mA)
+    p_tx_base: float = 0.257     # W, radio core while transmitting (VBAT 78 mA)
+    # FEM supply 147 mA x 3.3 V = 0.485 W at ~20 dBm (0.1 W) out -> ~0.21;
+    # FEM bias at low output power is neglected                    [ASSUMPTION]
+    pa_eff: float = 0.21
+    t_wake_listen: float = 5e-3  # s, wake-up + guard + ACK per wake  [ASSUMPTION]
     payload_bytes: int = 200
     preamble_s: float = 0.6e-3
 
@@ -128,8 +141,9 @@ class JointControlEnv:
 
     @staticmethod
     def per(snr_db, thr_db, slope=1.2):
-        """Packet error rate: logistic curve around the MCS threshold."""
-        return float(1.0 / (1.0 + np.exp(slope * (snr_db - thr_db))))
+        """Packet error rate: logistic curve, 10 % PER at the MCS threshold
+        (the data-sheet sensitivity definition)."""
+        return float(1.0 / (1.0 + np.exp(slope * (snr_db - thr_db) + np.log(9.0))))
 
     def outcome(self, p_dbm, T, snr_db=None, active=None):
         """Expected (weighted AoI, mean AoI, avg power W, delivery prob) for an epoch."""

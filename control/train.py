@@ -72,7 +72,7 @@ def main():
     env, agent, curve = train(cfg=cfg)
     agent.to_json(os.path.join(OUT, "control_qtable.json"), env.actions,
                   meta={"snr_bins_db": list(cfg.snr_bins_db), "epoch_s": cfg.epoch_s,
-                        "state": "snr_bucket*2 + active", "note": "placeholder link/power model"})
+                        "state": "snr_bucket*2 + active", "note": "published data-sheet parameters (docs/parameters.md), not testbed measurements"})
 
     pmax, pmin = max(cfg.power_levels_dbm), min(cfg.power_levels_dbm)
     i_max = best_fixed(cfg, lambda p: p == pmax)

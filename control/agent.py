@@ -14,7 +14,7 @@ import numpy as np
 
 class QAgent:
     def __init__(self, n_states, n_actions, alpha=0.1, gamma=0.0, eps=0.2,
-                 eps_min=0.02, eps_decay=0.9995, seed=0):
+                 eps_min=0.02, eps_decay=0.99995, seed=0):
         self.Q = np.zeros((n_states, n_actions))
         self.N = np.zeros((n_states, n_actions), dtype=int)
         self.alpha, self.gamma = alpha, gamma
