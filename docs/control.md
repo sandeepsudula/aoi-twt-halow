@@ -14,9 +14,10 @@ OpenWrt gateway against MM6108 nodes.
 | `train.py` | Trains, compares with fixed baselines and an oracle, writes `results/c1_*`. |
 | `deploy/gateway_agent.py` | Standard-library loop for the gateway: reads `iw station dump`, builds the same context, sends UDP `{"tx_power_dbm", "twt_interval_s"}` commands to nodes (`--dry-run` to only log). |
 
-First result (placeholder link/power model, 10 simulated days per policy): the learned controller lowers
-mean AoI during active periods from ~2.5 s to ~0.67 s **and** average power from ~0.30 to ~0.25 mW versus the
-best fixed (power, interval) pair, within ~5 % of an oracle that knows the true SNR (`results/c1_summary.csv`).
+First result (published MM6108 / 802.11ah parameters, docs/parameters.md; 10 simulated days per policy):
+against the best fixed (power, interval) pair the learned controller lowers mean AoI during active periods from
+~12.0 s to ~6.4 s and average power from ~0.86 to ~0.71 mW; an SNR-aware oracle is still 14 % better
+(`results/c1_summary.csv`). It sleeps longer when calm, so overall average AoI is higher (10.2 vs 8.2 s).
 
 ## Roadmap
 
@@ -36,5 +37,6 @@ best fixed (power, interval) pair, within ~5 % of an oracle that knows the true 
 
 ## Honest limitations of the current prototype
 - Expected-value outcomes, no contention between nodes, no interference — single-node control only.
-- All link and power numbers are placeholders until the measurement study is done.
+- Link and power numbers are published data-sheet / model values (docs/parameters.md), not testbed
+  measurements; shadowing and several timings are assumptions.
 - The node-side command handler does not exist yet; deployment is `--dry-run` until it does.
