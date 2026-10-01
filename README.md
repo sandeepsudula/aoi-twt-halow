@@ -12,8 +12,10 @@ parts, built around a Morse Micro **MM6108** HaLow testbed (EKH01 gateway, EKH05
 | 2nd | **AoI-aware TWT** (main contribution) — TWT schedules that minimize AoI under an energy budget, with event-driven adaptation | `aoitwt/`, `experiments/` | prototype + first results |
 | 3rd | **Joint TX-power + TWT controller, sim-to-real** — learned in simulation, run on the real gateway | `control/` | prototype + first results |
 
-The measurement study comes first because it gives the other two their real numbers: every power/timing and
-link value in the simulators is a **placeholder** until it is replaced with testbed measurements.
+The measurement study comes first because it gives the other two their real numbers. Until then, the
+simulators use **published values** — MM6108 module and STM32U585 data sheets, the 802.11ah MCS table and the
+TGah path-loss model — listed with sources in [docs/parameters.md](docs/parameters.md). The results below are
+simulation results with those parameters, **not testbed measurements**.
 
 ## 1 · Measurement study (`measure/`, [docs/measurement_study.md](docs/measurement_study.md))
 
@@ -32,11 +34,12 @@ contended wake), and **legacy power save** for reference.
 
 ![AoI vs budget](results/e1_aoi_vs_budget.png)
 
-- At the **same average power**, adaptive TWT cuts mean AoI during active periods by **~43–50 %**
-  (e.g. 2.01 s → 1.04 s at 0.5 mW) and state-weighted AoI by ~15 %.
-- Event wake cuts onset-to-delivery latency from seconds to ~10 ms — an upper bound that assumes an idle
-  channel and ideal sensing, to be checked in ns-3 and on hardware.
-- Individual TWT vs legacy PS (60 s reporting): ~29 % less power per station with random phases, ~90 % less
+- At the **same average power**, adaptive TWT cuts mean AoI during active periods by **~34–49 %**
+  (e.g. 5.53 s → 3.00 s at 0.5 mW; the smallest gain is at the tightest 0.15 mW budget) and state-weighted
+  AoI by ~9–16 %; overall time-averaged AoI rises slightly (by ~4–6 %), because calm periods get longer sleeps.
+- Event wake cuts onset-to-delivery latency from seconds (mean 5.8 s at 0.5 mW) to well under a second (median ~9 ms; mean 0.05 s at 0.5 mW, 0.28 s at 0.15 mW) — an
+  upper bound that assumes an idle channel and ideal sensing, to be checked in ns-3 and on hardware.
+- Individual TWT vs legacy PS (60 s reporting): ~38 % less power per station with random phases, ~93 % less
   at 200 synchronized stations. More: `results/e2_*`, `results/e3_*`, [docs/plan.md](docs/plan.md).
 
 ## 3 · Joint power + TWT controller (`control/`, [docs/control.md](docs/control.md))
@@ -47,8 +50,10 @@ learned table on OpenWrt and sends UDP commands to nodes.
 
 ![Controller comparison](results/c1_policy_comparison.png)
 
-- Versus the best fixed (power, interval) pair, the learned controller lowers active-period AoI from
-  ~2.5 s to ~0.67 s **and** average power from ~0.30 to ~0.25 mW, within ~5 % of an SNR-aware oracle.
+- Versus the best fixed (power, interval) pair (20 dBm, 5 s), the learned controller lowers active-period
+  AoI from ~12.0 s to ~6.4 s **and** average power from ~0.86 to ~0.71 mW (reward 12 % better); an SNR-aware
+  oracle is still 14 % better than the learned policy. The learned policy sleeps longer in calm periods, so its
+  overall average AoI is higher (10.2 s vs 8.2 s).
 
 ## Run it
 
@@ -65,11 +70,11 @@ Every push runs all of this on GitHub Actions and commits refreshed figures to `
 
 ```
 measure/                 collect.py, parse_power.py, analyze.py
-aoitwt/                  params.py (placeholders), sim.py (TWT/AoI/energy model)
+aoitwt/                  params.py (data-sheet values), sim.py (TWT/AoI/energy model)
 experiments/run_all.py   E1 AoI vs budget, E2 detection latency, E3 legacy vs TWT
 control/                 env.py, agent.py, train.py, deploy/gateway_agent.py
 tests/                   test_sanity.py, test_measure.py, test_control.py
-docs/                    plan, measurement study, testbed procedure, ns-3 notes, controller
+docs/                    parameters & sources, plan, measurement study, testbed, ns-3 notes, controller
 ```
 
 ## Related work in the lab
